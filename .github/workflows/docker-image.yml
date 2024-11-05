@@ -18,55 +18,10 @@ jobs:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       IMAGE_NAME: authservice
+      IMAGE_VERSION: latest
 
     steps:
       - uses: actions/checkout@v4
-
-      # Get the latest tag to determine the current version
-      - name: Get latest tag
-        id: get_tag
-        run: |
-          git fetch --tags
-          TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "0.0.0")
-          echo "Latest tag: $TAG"
-          echo "TAG=$TAG" >> $GITHUB_ENV
-
-      # Determine the version increment type (major, minor, or patch)
-      - name: Determine version increment
-        id: version_increment
-        run: |
-          # Use a default increment type (e.g., patch) or set it via a commit message or input
-          INCREMENT_TYPE=${{ github.event.head_commit.message || 'patch' }}
-          echo "Increment type: $INCREMENT_TYPE"
-          echo "INCREMENT_TYPE=$INCREMENT_TYPE" >> $GITHUB_ENV
-
-      # Increment version based on the increment type
-      - name: Increment version
-        id: increment_version
-        run: |
-          IFS='.' read -r -a VERSION <<< "$TAG"
-          MAJOR=${VERSION[0]}
-          MINOR=${VERSION[1]}
-          PATCH=${VERSION[2]}
-
-          case $INCREMENT_TYPE in
-            major)
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-              ;;
-            minor)
-              MINOR=$((MINOR + 1))
-              PATCH=0
-              ;;
-            patch|*)
-              PATCH=$((PATCH + 1))
-              ;;
-          esac
-
-          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-          echo "New version: $NEW_VERSION"
-          echo "IMAGE_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -79,13 +34,3 @@ jobs:
 
       - name: Push Docker image to Docker Hub
         run: docker push ${{ env.DOCKER_USER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VERSION }}
-
-      # Create and push a new tag in the repository
-      - name: Create and push new tag
-        env:
-          NEW_VERSION: ${{ env.IMAGE_VERSION }}
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag $NEW_VERSION
-          git push origin $NEW_VERSION
