@@ -17,8 +17,8 @@ jobs:
       id-token: write
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
-      IMAGE_NAME: AuthService
-      IMAGE_VERSION: 1.0.1
+      IMAGE_NAME: authservice
+      IMAGE_VERSION: latest
 
     steps:
       - uses: actions/checkout@v4
